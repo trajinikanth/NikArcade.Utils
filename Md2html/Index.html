@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Markdown to HTML Converter</title>
+  <style>
+    textarea, #output {
+      width: 49%;
+      height: 85vh;
+      font-family: monospace;
+      box-sizing: border-box;
+      padding: 10px;
+      vertical-align: top;
+      resize: none;
+      overflow: hidden;
+    }
+    #output {
+      border-left: 1px solid #ddd;
+      position: relative;
+    }
+    .container {
+      display: flex;
+      position: relative;
+    }
+    #copy-icon {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      z-index: 1;
+    }
+    #info-message {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <h1>Markdown to HTML Converter</h1>
+  <div class="container">
+    <textarea id="input" placeholder="Enter Markdown syntax here..."></textarea>
+    <div id="output"></div>
+    <svg id="copy-icon" width="24" height="24" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+    </svg>
+  </div>
+  <div id="info-message">Rendered content copied to clipboard!</div>
+
+  <script src="https://unpkg.com/showdown/dist/showdown.min.js"></script>
+  <script>
+    const converter = new showdown.Converter();
+    const inputArea = document.getElementById('input');
+    const outputArea = document.getElementById('output');
+    const copyIcon = document.getElementById('copy-icon');
+    const infoMessage = document.getElementById('info-message');
+
+    inputArea.addEventListener('input', function() {
+      const markdownText = inputArea.value;
+      const htmlText = converter.makeHtml(markdownText);
+      outputArea.innerHTML = htmlText;
+    });
+
+    copyIcon.addEventListener('click', function() {
+      const tempDiv = document.createElement('div');
+      tempDiv.appendChild(outputArea.cloneNode(true));
+      const tempSpan = document.createElement('span');
+      tempSpan.appendChild(tempDiv.cloneNode(true));
+      document.body.appendChild(tempSpan);
+
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(tempSpan);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      document.execCommand('copy');
+      document.body.removeChild(tempSpan);
+      showInfoMessage();
+    });
+
+    function showInfoMessage() {
+      infoMessage.style.opacity = 1;
+      setTimeout(function() {
+        infoMessage.style.opacity = 0;
+      }, 3000); // Hide the message after 3 seconds
+    }
+  </script>
+</body>
+</html>
