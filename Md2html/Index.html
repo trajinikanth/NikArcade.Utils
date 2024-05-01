@@ -55,7 +55,7 @@
 
   <script src="https://unpkg.com/showdown/dist/showdown.min.js"></script>
   <script>
-    const converter = new showdown.Converter();
+    const converter = new showdown.Converter({tables: true});
     const inputArea = document.getElementById('input');
     const outputArea = document.getElementById('output');
     const copyIcon = document.getElementById('copy-icon');
