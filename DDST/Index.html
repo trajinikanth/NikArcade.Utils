@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swim Meet Information</title>
+  <style>
+    /* Add your CSS styles here */
+    body {
+      font-family: Arial, sans-serif;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .pastEvent {
+      background-color: #f9d5d5;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Swim Meet Information</h2>
+
+<table id="swimMeetTable">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Location</th>
+      <th>Meet ID</th>
+      <th>Registration Deadline</th>
+      <th>Event Start</th>
+      <th>Event End</th>
+      <th>Event Sign-up</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Data will be dynamically populated here -->
+  </tbody>
+</table>
+
+<script>
+  // Fetch JSON data from the provided URL
+  fetch('https://script.googleusercontent.com/macros/echo?user_content_key=73t_CaoRMSVXq1tzCLvTVooQOA43-aV-NQ0QDMv9ght0f_uCkZ8keh3PqEnLxAd962dGKEfSPNHcx-fqxLhvFaesuoD2viM_m5_BxDlH2jW0nuo2oDemN9CCS2h10ox_1xSncGQajx_ryfhECjZEnEJ6y5olOWoLTwE4kuA-uOX6mjTK-3FF6rx7wrCDTOoEpSdtSjKrwuPLnMcu30rXOcGt8QJm8v11M_H6wEVkeIHiXD0riiNutdz9Jw9Md8uu&lib=Mw29Z-eURXuR1o8GwO02LBpUyeMH6Ma-I')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const swimMeetTable = document.getElementById('swimMeetTable');
+      const currentDate = new Date(); // Current date
+      
+      // Group events by month
+      const eventsByMonth = {};
+      data.forEach(event => {
+        const swimMeetInfo = event.eventInfoField.swimMeetInfo; // Access swimMeetInfo directly
+        if (!swimMeetInfo || new Date(event.event_end.displayValueISO) < currentDate) return; // If swimMeetInfo is null or event is in the past, skip this iteration
+
+        const event_start = new Date(event.event_start.displayValueISO);
+        const registration_deadline = new Date(swimMeetInfo.registrationDeadline);
+
+        // Get the start of the month for grouping
+        const monthKey = `${event_start.getFullYear()}-${('0' + (event_start.getMonth() + 1)).slice(-2)}-01`; // Format: YYYY-MM-01
+        if (!eventsByMonth[monthKey]) {
+          eventsByMonth[monthKey] = [];
+        }
+
+        eventsByMonth[monthKey].push({
+          title: event.title ? event.title.displayValue : '',
+          description: swimMeetInfo.description ? swimMeetInfo.description : '',
+          location: swimMeetInfo.locationName || '',
+          meetId: swimMeetInfo.meetId || '',
+          regDeadline: registration_deadline,
+          eventStart: event_start,
+          eventEnd: new Date(event.event_end.displayValueISO),
+          eventId: event.event_id.value // Add eventId to the object
+        });
+      });
+
+      // Sort events within each month by registration deadline
+      Object.keys(eventsByMonth).forEach(monthKey => {
+        eventsByMonth[monthKey].sort((a, b) => a.regDeadline - b.regDeadline);
+      });
+
+      // Render table
+      Object.keys(eventsByMonth).forEach(monthKey => {
+        const events = eventsByMonth[monthKey];
+        const monthStart = new Date(monthKey);
+        const monthArray = monthKey.split('-');
+        const month = parseInt(monthArray[1]);
+        const year = parseInt(monthArray[0]);
+        const monthName = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthHeaderRow = swimMeetTable.insertRow();
+        monthHeaderRow.innerHTML = `<th colspan="8">${monthName[month-1]} ${year}</th>`;
+
+        events.forEach(event => {
+          const row = swimMeetTable.insertRow();
+          const titleCell = row.insertCell(0);
+          const descriptionCell = row.insertCell(1);
+          const locationCell = row.insertCell(2);
+          const meetIdCell = row.insertCell(3);
+          const regDeadlineCell = row.insertCell(4);
+          const eventStartCell = row.insertCell(5);
+          const eventEndCell = row.insertCell(6);
+          const signUpCell = row.insertCell(7); // New cell for event sign-up
+
+          titleCell.textContent = event.title;
+          descriptionCell.innerHTML = event.description;
+          locationCell.textContent = event.location;
+          meetIdCell.textContent = event.meetId;
+          regDeadlineCell.textContent = event.regDeadline.toLocaleDateString();
+          eventStartCell.textContent = event.eventStart.toLocaleDateString();
+          eventEndCell.textContent = event.eventEnd.toLocaleDateString();
+
+          // Color code based on registration deadline
+          if (event.regDeadline < currentDate) {
+            regDeadlineCell.parentElement.classList.add('pastEvent');
+          }
+
+          // Create link for event sign-up only for new events
+          if (event.regDeadline > currentDate) {
+            signUpCell.innerHTML = `<a href="https://www.gomotionapp.com/EvSignup.jsp?use-empty-layout=true&team=ilddst&event_id=${event.eventId}" target="_blank">Sign Up</a>`;
+          }
+        });
+      });
+    })
+    .catch(error => console.error('Error fetching data:', error));
+</script>
+
+</body>
+</html>
