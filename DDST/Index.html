@@ -24,6 +24,20 @@
     .pastEvent {
       background-color: #f9d5d5;
     }
+    .editableNote {
+      border: none;
+      width: 100%;
+      resize: vertical;
+    }
+    .descriptionColumn {
+      max-width: 200px; /* Reduce the width of the description column */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .notesColumn {
+      width: 250px; /* Add more width to the notes column */
+    }
   </style>
 </head>
 <body>
@@ -34,13 +48,14 @@
   <thead>
     <tr>
       <th>Title</th>
-      <th>Description</th>
+      <th class="descriptionColumn">Description</th>
       <th>Location</th>
       <th>Meet ID</th>
       <th>Registration Deadline</th>
       <th>Event Start</th>
       <th>Event End</th>
       <th>Event Sign-up</th>
+      <th class="notesColumn">Notes</th> <!-- New column for Notes -->
     </tr>
   </thead>
   <tbody>
@@ -60,7 +75,10 @@
     .then(data => {
       const swimMeetTable = document.getElementById('swimMeetTable');
       const currentDate = new Date(); // Current date
-      
+
+      // Load notes from local storage if available
+      const storedNotes = JSON.parse(localStorage.getItem('swimMeetNotes')) || {};
+
       // Group events by month
       const eventsByMonth = {};
       data.forEach(event => {
@@ -84,7 +102,8 @@
           regDeadline: registration_deadline,
           eventStart: event_start,
           eventEnd: new Date(event.event_end.displayValueISO),
-          eventId: event.event_id.value // Add eventId to the object
+          eventId: event.event_id.value, // Add eventId to the object
+          notes: storedNotes[event.event_id.value] || '', // Retrieve notes from local storage or set an empty string
         });
       });
 
@@ -102,7 +121,7 @@
         const year = parseInt(monthArray[0]);
         const monthName = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         const monthHeaderRow = swimMeetTable.insertRow();
-        monthHeaderRow.innerHTML = `<th colspan="8">${monthName[month-1]} ${year}</th>`;
+        monthHeaderRow.innerHTML = `<th colspan="9">${monthName[month-1]} ${year}</th>`;
 
         events.forEach(event => {
           const row = swimMeetTable.insertRow();
@@ -131,6 +150,28 @@
           // Create link for event sign-up only for new events
           if (event.regDeadline > currentDate) {
             signUpCell.innerHTML = `<a href="https://www.gomotionapp.com/EvSignup.jsp?use-empty-layout=true&team=ilddst&event_id=${event.eventId}" target="_blank">Sign Up</a>`;
+          }
+
+          const notesCell = row.insertCell(8); // New cell for Notes
+          if (event.regDeadline < currentDate) {
+            notesCell.textContent = event.notes; // Render notes as text for past events
+          } else {
+            notesCell.innerHTML = `<textarea class="editableNote" data-event-id="${event.eventId}">${event.notes}</textarea>`;
+
+            // Add event listener to save notes to local storage on input or blur
+            const editableNote = notesCell.querySelector('.editableNote');
+            if (editableNote) {
+              editableNote.addEventListener('input', () => {
+                const eventId = editableNote.getAttribute('data-event-id');
+                storedNotes[eventId] = editableNote.value;
+                localStorage.setItem('swimMeetNotes', JSON.stringify(storedNotes));
+              });
+              editableNote.addEventListener('blur', () => {
+                const eventId = editableNote.getAttribute('data-event-id');
+                storedNotes[eventId] = editableNote.value;
+                localStorage.setItem('swimMeetNotes', JSON.stringify(storedNotes));
+              });
+            }
           }
         });
       });
