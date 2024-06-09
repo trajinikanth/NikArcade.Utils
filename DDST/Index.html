@@ -99,6 +99,9 @@
       const eventsByMonth = {};
       data.forEach(event => {
         const swimMeetInfo = event.eventInfoField.swimMeetInfo; // Access swimMeetInfo directly
+        
+        console.log(swimMeetInfo);
+
         if (!swimMeetInfo || new Date(event.event_end.displayValueISO) < currentDate) return; // If swimMeetInfo is null or event is in the past, skip this iteration
 
         const event_start = new Date(event.event_start.displayValueISO);
